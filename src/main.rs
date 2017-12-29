@@ -3,6 +3,7 @@ extern crate stdweb;
 extern crate m3u8_rs;
 
 mod hls;
+mod browser;
 
 use hls::get_playlist;
 
