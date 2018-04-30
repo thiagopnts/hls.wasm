@@ -3,8 +3,12 @@ name = "hls"
 version = "0.1.0"
 authors = ["Thiago Pontes <crates@thiago.me>"]
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 m3u8-rs = "1.0.4"
+wasm-bindgen = "0.2"
 
 # using git repo directly because the `From<ArrayBuffer> for Vec<u8>` is not released yet
 [dependencies.stdweb]
