@@ -5,7 +5,5 @@ authors = ["Thiago Pontes <crates@thiago.me>"]
 
 [dependencies]
 m3u8-rs = "1.0.4"
+stdweb = "0.4.4"
 
-# using git repo directly because the `From<ArrayBuffer> for Vec<u8>` is not released yet
-[dependencies.stdweb]
-git = "https://github.com/koute/stdweb"
