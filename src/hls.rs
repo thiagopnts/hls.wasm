@@ -3,6 +3,8 @@ use m3u8_rs::playlist::Playlist;
 use stdweb::web::{ArrayBuffer, TypedArray};
 
 use browser;
+use ts_demuxer;
+
 
 fn parse_playlist(playlist: String) {
         let parsed = parse_playlist_res(&playlist.as_bytes());
@@ -15,7 +17,7 @@ fn parse_playlist(playlist: String) {
             },
             Ok(Playlist::MediaPlaylist(media)) => {
                 browser::log_fmt(format!("parsed media playlist with {} segments", media.segments.len()));
-                if let Some(segment) = media.segments.get(0) {
+                if let Some(segment) = media.segments.get(1) {
                     browser::log("fetching first segment");
                     browser::fetch_bytes(segment.uri.clone(), transmux);
                 }
@@ -27,11 +29,20 @@ fn parse_playlist(playlist: String) {
 
 }
 
-const SYNC_MASK: u32 = 0xff000000;
-const TEI_MASK: u32 = 0x800000;
-const PUSI_MASK: u32 = 0x400000;
-const TP_MASK: u32 = 0x200000;
-const PID_MASK: u32 = 0x1fff00;
+const SYNC_MASK: u32 = 0xFF000000;
+const TEI_MASK: u32 = 0x8000;
+const PUSI_MASK: u32 = 0x4000;
+const TP_MASK: u32 = 0x2000;
+const PID_MASK: u32 = 0x1FFF;
+
+const TSC_MASK: u32 = 0xc0;
+const AFC_MASK: u32 = 0x3;
+const CC_MASK: u32 = 0xF;
+
+#[inline]
+fn mask_for(size: u8, pos: u8) -> u32 {
+    return ((1 << size) - 1) << (32 - size - pos);
+}
 
 fn transmux(array_buffer: ArrayBuffer) {
     browser::log_fmt(format!("got segment, buffer size: {}", array_buffer.len()));
@@ -48,10 +59,18 @@ fn transmux(array_buffer: ArrayBuffer) {
         browser::log_fmt(format!("header: {:#034b}", header));
     }
     browser::log_fmt(format!("Sync byte: 0x{:X}", header & SYNC_MASK));
+    browser::log_fmt(format!("Sync byte: 0x{:X}", header & mask_for(8, 0)));
     browser::log_fmt(format!("Transport Error Indicator: {}", header & TEI_MASK));
-    browser::log_fmt(format!("Payload Unit Start Indicator: {}", header & PUSI_MASK));
+    browser::log_fmt(format!("Transport Error Indicator: {}", header & mask_for(1, 8)));
+    browser::log_fmt(format!("Payload Unit Start Indicator: {:b}", header & PUSI_MASK));
+    browser::log_fmt(format!("Payload Unit Start Indicator: {:b}", header & mask_for(1, 9)));
     browser::log_fmt(format!("Transport Priority: {}", header & TP_MASK));
-    browser::log_fmt(format!("PID: {}", header & PID_MASK));
+    browser::log_fmt(format!("Transport Priority: {}", header & mask_for(1, 10)));
+    browser::log_fmt(format!("PID: {}", header & mask_for(13, 11)));
+    browser::log_fmt(format!("Transport Scrambling Control: {:b}", header & mask_for(2, 24)));
+    browser::log_fmt(format!("Transport Scrambling Control: {:b}", header & mask_for(2, 26)));
+    browser::log_fmt(format!("Adaptation field control: {:#04b}", header & mask_for(2, 28)));
+    browser::log_fmt(format!("Continuity counter: {:b}", header & 0xF));
 }
 
 pub fn get_playlist(url: String) {

@@ -4,6 +4,7 @@ extern crate m3u8_rs;
 
 mod hls;
 mod browser;
+mod ts_demuxer;
 
 use hls::get_playlist;
 
